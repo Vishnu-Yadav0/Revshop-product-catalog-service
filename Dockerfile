@@ -1,13 +1,6 @@
-# Build stage
-FROM maven:3.9.6-eclipse-temurin-21-jammy AS build
+FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# Run stage
-FROM eclipse-temurin:21-jre-jammy
-WORKDIR /app
-COPY --from=build /app/target/Revshop-product-catalog-service-0.0.1-SNAPSHOT.jar app.jar
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]
