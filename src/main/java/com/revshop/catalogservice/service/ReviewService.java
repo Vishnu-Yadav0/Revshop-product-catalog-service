@@ -1,5 +1,6 @@
 package com.revshop.catalogservice.service;
 
+import com.revshop.catalogservice.client.SalesClient;
 import com.revshop.catalogservice.client.UserClient;
 import com.revshop.catalogservice.dto.ApiResponse;
 import com.revshop.catalogservice.dto.ReviewDTO;
@@ -27,11 +28,13 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final UserClient userClient;
+    private final SalesClient salesClient;
 
-    public ReviewService(ReviewRepository reviewRepository, ProductRepository productRepository, UserClient userClient) {
+    public ReviewService(ReviewRepository reviewRepository, ProductRepository productRepository, UserClient userClient, SalesClient salesClient) {
         this.reviewRepository = reviewRepository;
         this.productRepository = productRepository;
         this.userClient = userClient;
+        this.salesClient = salesClient;
     }
 
     public List<ReviewDTO> getReviewsByProductId(Long productId) {
@@ -50,6 +53,12 @@ public class ReviewService {
     public ReviewDTO addReview(ReviewDTO dto) {
         log.info("Adding review for product {} by user {}", dto.getProductId(), dto.getUserId());
         
+        // Check if user has purchased the product
+        ApiResponse<Boolean> purchaseResponse = salesClient.checkPurchase(dto.getUserId(), dto.getProductId());
+        if (purchaseResponse == null || purchaseResponse.getData() == null || !purchaseResponse.getData()) {
+            throw new RuntimeException("Only verified buyers can review this product");
+        }
+
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
@@ -81,15 +90,22 @@ public class ReviewService {
     }
 
     public Map<String, Object> checkReviewEligibility(Long userId, Long productId) {
-        // Note: In microservices, we might need to call orders-service to check if purchased.
-        // For now, mirroring monolith logic if it was available here, otherwise simple check.
         boolean hasReviewed = reviewRepository.findByProduct_ProductIdAndUserId(productId, userId).isPresent();
         
+        boolean hasPurchased = false;
+        try {
+            ApiResponse<Boolean> response = salesClient.checkPurchase(userId, productId);
+            if (response != null && response.getData() != null) {
+                hasPurchased = response.getData();
+            }
+        } catch (Exception e) {
+            log.error("Error checking purchase eligibility: {}", e.getMessage());
+        }
+
         Map<String, Object> eligibility = new HashMap<>();
         eligibility.put("hasReviewed", hasReviewed);
-        // hasPurchased logic would ideally be a Feign call to orders-service.
-        // Assuming true for now or leaving as placeholder since we don't have the client yet.
-        eligibility.put("canReview", !hasReviewed); 
+        eligibility.put("hasPurchased", hasPurchased);
+        eligibility.put("canReview", hasPurchased && !hasReviewed); 
         
         return eligibility;
     }
@@ -107,6 +123,7 @@ public class ReviewService {
             ApiResponse<UserResponse> userResponse = userClient.getUserById(review.getUserId());
             if (userResponse != null && userResponse.getData() != null) {
                 dto.setUserDetails(userResponse.getData());
+                dto.setUserName(userResponse.getData().getName());
             }
         } catch (Exception e) {
             log.debug("Could not fetch user details for userId={}: {}", review.getUserId(), e.getMessage());

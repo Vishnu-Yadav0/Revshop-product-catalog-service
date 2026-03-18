@@ -10,6 +10,8 @@ public class ProductDTO {
     private UserResponse sellerDetails; // Enhanced in Service via Feign Client
     private Long categoryId;
     private CategoryDTO category; // Detailed category
+    private String categoryName; // Flat field for comparison
+    private String sellerName; // Flat field for comparison
     private String name;
     private String description;
     private BigDecimal mrp;
@@ -62,6 +64,22 @@ public class ProductDTO {
 
     public void setCategory(CategoryDTO category) {
         this.category = category;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
+    public String getSellerName() {
+        return sellerName;
+    }
+
+    public void setSellerName(String sellerName) {
+        this.sellerName = sellerName;
     }
 
     public String getName() {

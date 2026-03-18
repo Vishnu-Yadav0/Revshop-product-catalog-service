@@ -9,6 +9,7 @@ public class ReviewDTO {
     private Integer rating;
     private String reviewText;
     private LocalDateTime createdAt;
+    private String userName; // For frontend display
     private UserResponse userDetails; // Enhanced in Service via Feign Client
 
     public ReviewDTO() {}
@@ -59,6 +60,14 @@ public class ReviewDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public UserResponse getUserDetails() {

@@ -206,6 +206,7 @@ public class ProductService {
             ApiResponse<UserResponse> userResponse = userClient.getUserById(product.getSellerId());
             if (userResponse != null && userResponse.getData() != null) {
                 dto.setSellerDetails(userResponse.getData());
+                dto.setSellerName(userResponse.getData().getName()); // Populating flat field
             }
         } catch (Exception e) {
             log.debug("Could not fetch seller details for sellerId={}: {}", product.getSellerId(), e.getMessage());
@@ -213,6 +214,7 @@ public class ProductService {
 
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getCategoryId());
+            dto.setCategoryName(product.getCategory().getName()); // Populating flat field
             CategoryDTO catDto = new CategoryDTO();
             catDto.setCategoryId(product.getCategory().getCategoryId());
             catDto.setName(product.getCategory().getName());
